@@ -1,0 +1,21 @@
+# .github/workflows/slack-notify.yml
+name: Notify Slack on push
+
+on:
+  push:
+    branches:
+      - '**'  # 모든 브랜치에 대해 작동
+
+jobs:
+  slack_notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send message to Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          author_name: www-be
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+          if_mention: failure,cancelled
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
