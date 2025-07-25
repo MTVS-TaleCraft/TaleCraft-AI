@@ -153,6 +153,12 @@ async def chat(request: ChatRequest):
     
 @app.post("/api/extension", response_model=ChatResponse)
 async def chat(request: ChatRequest):
+    if request.extensionLength > 19000:
+        response = ChatResponse(
+            status = False,
+            response = "글자 수 늘리기 수치는 최대 19000자 까지만 가능합니다."
+        )
+        return response
     # GenerativeModel 초기화
     model = genai.GenerativeModel(
         'gemini-2.5-flash',
@@ -160,7 +166,7 @@ async def chat(request: ChatRequest):
         system_instruction=
         """
             너는 다양한 장르의 소설을 많이 작성해본 작가이면서 다양한 작품들을 첨삭 혹은 피드백을 해본 편집자야.
-            너는 현재 주어진 소설을 최소 {request.extensionLength}만큼 늘려야 해.
+            너는 현재 주어진 소설을 최소 {request.extensionLength}만큼 늘려야 해. 단, 2만 자를 넘어선 안돼.
             또 출력 내용은 대답 없이 오로지 이야기만을 출력해야 해.
             모든 답변은 질문에 다른 언어로 답해 달라는 말이 없는 한 한국어로 답변해줘.
             부적절한 질문이나 소설 작성과 관련없는 것 같은 요청에는 정중하게 거절해야해.
