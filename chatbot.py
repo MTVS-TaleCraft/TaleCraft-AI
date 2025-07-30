@@ -2,7 +2,6 @@ import time
 import traceback
 from fastapi import FastAPI, HTTPException
 import google.generativeai as genai
-from google.genai import types
 from config import config  # 중앙화된 설정 사용
 from models import (ChatRequest, ChatResponse)
 
