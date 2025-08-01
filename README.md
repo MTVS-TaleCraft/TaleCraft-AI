@@ -30,5 +30,5 @@ pip install -r requirements.txt
 uvicorn chatbot:app --reload --host 0.0.0.0 --port 8000
 
 # 백그라운드 실행
-nohup uvicorn chatbot:app --reload > output.log 2>&1 &
+nohup uvicorn chatbot:app --host 0.0.0.0 --port 8000 > output.log 2>&1 &
 ```
