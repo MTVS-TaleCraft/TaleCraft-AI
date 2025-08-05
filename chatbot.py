@@ -117,8 +117,22 @@ async def chat(request: ChatRequest):
         user_query = request.question
         print(f"현재 질문: {user_query}")
 
+        conversation_history = []
+        if request.beforeQuestionList and request.beforeResponseList:
+            # 두 리스트의 길이가 다를 수 있으므로 최소 길이로 맞춤
+            min_length = min(len(request.beforeQuestionList), len(request.beforeResponseList))
+            for i in range(min_length):
+                conversation_history.extend([
+                    {"role": "user", "parts": [request.beforeQuestionList[i]]},
+                    {"role": "model", "parts": [request.beforeResponseList[i]]}
+                ])
+            print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
+            
+        else:
+            print("이전 대화 기록 없음")
+
         # 모델을 사용하여 응답 생성
-        chat = model.start_chat()
+        chat = model.start_chat(history=conversation_history)
         chat_response = chat.send_message(
             user_query,
             generation_config=genai.types.GenerationConfig(
@@ -182,7 +196,21 @@ async def chat(request: ChatRequest):
         user_query = request.question
         print(f"현재 질문: {user_query}")
 
-        chat = model.start_chat() # history를 비워두고 user_query에 모든 컨텍스트를 담아 보냅니다.
+        conversation_history = []
+        if request.beforeQuestionList and request.beforeResponseList:
+            # 두 리스트의 길이가 다를 수 있으므로 최소 길이로 맞춤
+            min_length = min(len(request.beforeQuestionList), len(request.beforeResponseList))
+            for i in range(min_length):
+                conversation_history.extend([
+                    {"role": "user", "parts": [request.beforeQuestionList[i]]},
+                    {"role": "model", "parts": [request.beforeResponseList[i]]}
+                ])
+            print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
+            
+        else:
+            print("이전 대화 기록 없음")
+
+        chat = model.start_chat(history=conversation_history)
         max_tokens_for_chunk = 6000
         chat_response = chat.send_message(
             user_query,
