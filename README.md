@@ -13,7 +13,7 @@ pip install git
 git clone https://github.com/MTVS-TaleCraft/TaleCraft-AI.git
 
 # 가상환경 생성 (권장)
-python -m venv venv
+python -m venv venv  # Windows : py -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # .env.example 복사
