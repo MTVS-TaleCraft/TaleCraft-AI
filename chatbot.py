@@ -4,6 +4,9 @@ from fastapi import FastAPI, HTTPException
 import google.generativeai as genai
 from config import config  # 중앙화된 설정 사용
 from models import (ChatRequest, ChatResponse)
+from PIL import Image
+import io
+import base64
 
 # 환경 변수 로드
 
@@ -47,24 +50,24 @@ async def chat(request: ChatRequest):
         print(f"현재 질문: {user_query}")
 
         # 사용자 이전 대답 추출
-        conversation_history = []
-        if request.beforeQuestionList and request.beforeResponseList:
-            # 두 리스트의 길이가 다를 수 있으므로 최소 길이로 맞춤
-            min_length = min(len(request.beforeQuestionList), len(request.beforeResponseList))
-            for i in range(min_length):
-                conversation_history.extend([
-                    {"role": "user", "parts": [request.beforeQuestionList[i]]},
-                    {"role": "model", "parts": [request.beforeResponseList[i]]}
-                ])
-            print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
-            
-        else:
-            print("이전 대화 기록 없음")
+        conversation_history = create_chat_history(request)
+        print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
+
+        # Gemini 모델에 보낼 콘텐츠 구성 (이미지 유무에 따라 다름)
+        current_message_parts = [user_query]
+        if request.image:
+            try:
+                img_bytes = base64.b64decode(request.image)
+                image_pil = Image.open(io.BytesIO(img_bytes))
+                current_message_parts.insert(0, image_pil) # 이미지와 텍스트를 함께 전달
+            except Exception as e:
+                print(f"이미지 디코딩 또는 Pillow 처리 오류: {e}")
+                # 오류 발생 시 이미지를 빼고 텍스트만 처리
 
         # 모델을 사용하여 응답 생성
         chat = model.start_chat(history=conversation_history)
         chat_response = chat.send_message(
-            user_query,
+            current_message_parts,
             generation_config=genai.types.GenerationConfig(
                 candidate_count=1,
                 temperature=0.7,
@@ -117,19 +120,8 @@ async def chat(request: ChatRequest):
         user_query = request.question
         print(f"현재 질문: {user_query}")
 
-        conversation_history = []
-        if request.beforeQuestionList and request.beforeResponseList:
-            # 두 리스트의 길이가 다를 수 있으므로 최소 길이로 맞춤
-            min_length = min(len(request.beforeQuestionList), len(request.beforeResponseList))
-            for i in range(min_length):
-                conversation_history.extend([
-                    {"role": "user", "parts": [request.beforeQuestionList[i]]},
-                    {"role": "model", "parts": [request.beforeResponseList[i]]}
-                ])
-            print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
-            
-        else:
-            print("이전 대화 기록 없음")
+        conversation_history = create_chat_history(request)
+        print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
 
         # 모델을 사용하여 응답 생성
         chat = model.start_chat(history=conversation_history)
@@ -196,19 +188,8 @@ async def chat(request: ChatRequest):
         user_query = request.question
         print(f"현재 질문: {user_query}")
 
-        conversation_history = []
-        if request.beforeQuestionList and request.beforeResponseList:
-            # 두 리스트의 길이가 다를 수 있으므로 최소 길이로 맞춤
-            min_length = min(len(request.beforeQuestionList), len(request.beforeResponseList))
-            for i in range(min_length):
-                conversation_history.extend([
-                    {"role": "user", "parts": [request.beforeQuestionList[i]]},
-                    {"role": "model", "parts": [request.beforeResponseList[i]]}
-                ])
-            print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
-            
-        else:
-            print("이전 대화 기록 없음")
+        conversation_history = create_chat_history(request)
+        print(f"이전 대화 기록: {len(conversation_history)//2}개 대화")
 
         chat = model.start_chat(history=conversation_history)
         max_tokens_for_chunk = 6000
@@ -247,3 +228,14 @@ async def chat(request: ChatRequest):
         print(f"에러 발생 : {total_time:.2f}초")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"서버 내부 오류: {str(e)}")
+    
+def create_chat_history(request: ChatRequest):
+    conversation_history = []
+    if request.beforeQuestionList and request.beforeResponseList:
+        min_length = min(len(request.beforeQuestionList), len(request.beforeResponseList))
+        for i in range(min_length):
+            conversation_history.extend([
+                {"role": "user", "parts": [request.beforeQuestionList[i]]},
+                {"role": "model", "parts": [request.beforeResponseList[i]]}
+            ])
+    return conversation_history
